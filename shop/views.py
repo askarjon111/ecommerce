@@ -52,8 +52,8 @@ class DetailProduct(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk, format=None):
-        post = self.get_object(pk)
-        post.delete()
+        product = self.get_object(pk)
+        product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -129,27 +129,32 @@ class DetailOrderItem(APIView):
             raise Http404
 
     def get(self, request, pk, format=None):
-        product = self.get_object(pk)
-        serializer = OrderItemSerializer(product)
-        product.save()
+        orderitem = self.get_object(pk)
+        serializer = OrderItemSerializer(orderitem)
         return Response(serializer.data)
 
     @swagger_auto_schema(request_body=ProductSerializer)
     def put(self, request, pk, format=None):
-        product = self.get_object(pk)
-        serializer = OrderItemSerializer(product, data=request.data)
+        orderitem = self.get_object(pk)
+        serializer = OrderItemSerializer(orderitem, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk, format=None):
-        post = self.get_object(pk)
-        post.delete()
+        orderitem = self.get_object(pk)
+        orderitem.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # Order CRUD
+
+class ListOrders(APIView):
+    def get(self, request):
+        orders = Order.objects.all()
+        serializer = OrderSerializer(orders, many=True)
+        return Response(serializer.data)
 
 
 class AddOrder(APIView):
@@ -157,10 +162,33 @@ class AddOrder(APIView):
     def post(self, request, format=None):
         serializer = OrderSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.validated_data['user'] = request.user
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class DetailOrder(APIView):
+    def get_object(self, pk):
+        try:
+            return Order.objects.get(pk=pk)
+        except Order.DoesNotExist:
+            raise Http404
 
+    def get(self, request, pk, format=None):
+        order = self.get_object(pk)
+        serializer = OrderSerializer(order)
+        return Response(serializer.data)
+
+    @swagger_auto_schema(request_body=ProductSerializer)
+    def put(self, request, pk, format=None):
+        order = self.get_object(pk)
+        serializer = OrderSerializer(order, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, format=None):
+        order = self.get_object(pk)
+        order.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

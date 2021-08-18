@@ -20,13 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username', 'password', 'email', 'phone']
-
-
-class ShippingAddressSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ShippingAddress
-        fields = '__all__'
-
+        
 
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -37,7 +31,6 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     orderItems = serializers.SerializerMethodField(read_only=True)
     shippingAddress = serializers.SerializerMethodField(read_only=True)
-    user = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Order
