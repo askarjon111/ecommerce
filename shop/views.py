@@ -163,7 +163,6 @@ class ListOrders(APIView):
 class AddOrder(APIView):
     @swagger_auto_schema(request_body=OrderSerializer)
     def post(self, request, format=None):
-        
         permission_classes = [IsAuthenticated]
         serializer = OrderSerializer(data=request.data)
         
@@ -203,3 +202,24 @@ class DetailOrder(APIView):
         order = self.get_object(pk)
         order.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# Review CRUD
+
+class AddReview(APIView):
+    @swagger_auto_schema(request_body=ReviewSerializer)
+    def post(self, request, format=None):
+        permission_classes = [IsAuthenticated]
+        serializer = ReviewSerializer(data=request.data)
+        
+
+        if serializer.is_valid():
+            if serializer.validated_data['rating'] == 0:
+                raise ValidationError('Iltimos reytingni kiriting!')
+                return Response(serializer.validated_data['rating'], status=status.HTTP_400_BAD_REQUEST)
+            else:    
+                serializer.validated_data['user'] = request.user
+                serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

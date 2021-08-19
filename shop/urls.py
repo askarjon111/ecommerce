@@ -15,4 +15,7 @@ urlpatterns = [
 
     path('orders/', ListOrders.as_view(), name="orders"),
     path('addorder/', AddOrder.as_view(), name="addorder"),
+
+    path('addreview/', AddReview.as_view(), name="addreview"),
+
 ]

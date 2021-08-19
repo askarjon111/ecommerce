@@ -22,6 +22,13 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['username', 'password', 'email', 'phone']
         
 
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = '__all__'
+        extra_kwargs = {'user': {'read_only': True}}
+
+
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
