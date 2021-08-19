@@ -5,6 +5,8 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+
 
 from .models import *
 from .serializers import *
@@ -160,8 +162,14 @@ class ListOrders(APIView):
 class AddOrder(APIView):
     @swagger_auto_schema(request_body=OrderSerializer)
     def post(self, request, format=None):
+        
+        permission_classes = [IsAuthenticated]
         serializer = OrderSerializer(data=request.data)
+        
         if serializer.is_valid():
+            orderItem = serializer.validated_data['orderItem']
+            serializer.validated_data['orderItem'] = OrderItem.objects.filter(
+                user=request.user)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
