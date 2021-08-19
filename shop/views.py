@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from django.core.exceptions import ValidationError
 
 
 from .models import *
@@ -167,9 +168,11 @@ class AddOrder(APIView):
         serializer = OrderSerializer(data=request.data)
         
         if serializer.is_valid():
-            orderItem = serializer.validated_data['orderItem']
-            serializer.validated_data['orderItem'] = OrderItem.objects.filter(
-                user=request.user)
+            for i in serializer.validated_data['orderItem']:
+                if i.user == request.user:
+                    pass
+                else:
+                    raise ValidationError('Bu orderitem sizniki emas')
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

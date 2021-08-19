@@ -52,7 +52,6 @@ class OrderItem(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.SET_NULL, blank=True, null=True)
     qty = models.IntegerField(null=True, blank=True, default=0)
-    # _id = models.AutoField(primary_key=True, editable=False)
 
     def __str__(self):
         return str(self.product)
