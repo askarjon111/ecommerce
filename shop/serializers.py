@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import *
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import UserProfile
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -14,12 +14,13 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = '__all__'
+        extra_kwargs = {'user': {'read_only': True}}
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ['username', 'password', 'email', 'phone']
+        model = UserProfile
+        fields = ['user_name', 'password', 'email']
         
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -33,14 +34,11 @@ class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
         fields = '__all__'
-        
+        extra_kwargs = {'user': {'read_only': True}}
+
 
 class OrderSerializer(serializers.ModelSerializer):
     class Meta():
         model = Order
         fields = '__all__'
-
-    def get_orderItems(self, obj):
-        items = obj.orderItem_set.all()
-        serializer = OrderItemSerializer(items, many=True)
-        return serializer.data
+        extra_kwargs = {'user': {'read_only': True}}
