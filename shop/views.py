@@ -257,33 +257,14 @@ class UserAuth(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-# class UserLogin(APIView):
-#     def post(self, request):
-#         serializer = UserSerializer(data=request.data)
-#         email = serializer.validated_data['email']
-#         password = serializer.validated_data['password']
-
-#         user = authenticate(email=email, password=password)
-
-#         if user is not None:
-#             if user.is_active:
-#                 login(request, user)
-
-#                 return Response(status=status.HTTP_200_OK)
-#             else:
-#                 return Response(status=status.HTTP_404_NOT_FOUND)
-#         else:
-#             return Response(status=status.HTTP_404_NOT_FOUND)
-
 class UserLogin(ObtainAuthToken):
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid():
-            email = serializer.validated_data['email']
+            user_name = serializer.validated_data['user_name']
             password = serializer.validated_data['password']
 
-            user = UserProfile.objects.filter(email=email).first()
+            user = UserProfile.objects.filter(user_name=user_name).first()
 
             if user is None:
                 raise AuthenticationFailed('User not found')

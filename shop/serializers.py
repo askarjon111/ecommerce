@@ -20,7 +20,13 @@ class CategorySerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['user_name', 'password', 'email']
+        fields = ['user_name', 'password', 'email', 'phone_number']
+
+
+class CodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Code
+        fields = ['number']
 
 
 class UserLoginSerializer(serializers.ModelSerializer):
