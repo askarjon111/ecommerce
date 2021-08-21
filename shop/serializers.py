@@ -21,6 +21,12 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ['user_name', 'password', 'email']
+
+
+class UserLoginSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['email', 'password']
         
 
 class ReviewSerializer(serializers.ModelSerializer):

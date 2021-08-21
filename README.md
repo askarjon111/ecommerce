@@ -6,7 +6,7 @@
    1.3. User Auth( JWT) with SMS
    1.4. User Register via Facebook/Google + SMS
    1.5. Cart CRUD **Done**
-   1.6. Order CRUD **Done**_ 
+   1.6. Order CRUD **Done**_
 2. **Write Unit + Integration Tests for each view(functions)**
 3. **Deploy**
  

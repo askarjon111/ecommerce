@@ -1,4 +1,3 @@
-# from django.contrib.auth.models import User
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
@@ -7,10 +6,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.core.exceptions import ValidationError
-
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.authtoken.models import Token
 
 from .models import *
 from .serializers import *
+from django.contrib.auth import authenticate, login
+from rest_framework.exceptions import AuthenticationFailed
+from datetime import datetime
 
 # Product CRUD
 
@@ -253,6 +256,50 @@ class UserAuth(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# class UserLogin(APIView):
+#     def post(self, request):
+#         serializer = UserSerializer(data=request.data)
+#         email = serializer.validated_data['email']
+#         password = serializer.validated_data['password']
+
+#         user = authenticate(email=email, password=password)
+
+#         if user is not None:
+#             if user.is_active:
+#                 login(request, user)
+
+#                 return Response(status=status.HTTP_200_OK)
+#             else:
+#                 return Response(status=status.HTTP_404_NOT_FOUND)
+#         else:
+#             return Response(status=status.HTTP_404_NOT_FOUND)
+
+class UserLogin(ObtainAuthToken):
+    def post(self, request):
+        serializer = UserLoginSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            password = serializer.validated_data['password']
+
+            user = UserProfile.objects.filter(email=email).first()
+
+            if user is None:
+                raise AuthenticationFailed('User not found')
+            
+            if not user.check_password(password):
+                raise AuthenticationFailed('Incorrect password')
+            
+            payload = {
+                'id': user.id,
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
+                'iat': datetime.datetime.utcnow()
+            }
+
+            token = jwt.encode(payload, 'secret', algorithm='HS256').decode('utf-8')
+
+            return Response('jwt', token)
 
 
 class MyProfile(APIView):
