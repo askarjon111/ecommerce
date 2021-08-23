@@ -1,13 +1,15 @@
 from django.contrib.auth.models import User
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from twilio.rest import Client
+import random
 from .models import *
 from .serializers import *
+
 
 # Product CRUD
 
@@ -192,3 +194,22 @@ class DetailOrder(APIView):
         order = self.get_object(pk)
         order.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SentOtp(APIView):
+    def post(self, request):
+        account_id = "ACa0b27bb2461149d381dc475a36b2849f"
+        auth_token = "607ffc5980c0e2de499a5d0cfd1861f1"
+        number = request.data['number']
+        cliend = Client(account_id, auth_token)
+        otp = generateOTP()
+        body = "Your OTP is "+ str(otp)
+        message = client.messages.create(from_= "+998902646366", body=body, to=number)
+        if message.sid:
+            print("sent successfull")
+            return JsonResponse({"success": True})
+        else:
+            print("fail to send")
+            return JsonResponse({"success": False})
+def generateOTP():
+    return random.rangrange(100000, 999999)
