@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import *
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import UserProfile
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -14,42 +14,43 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = '__all__'
+        extra_kwargs = {'user': {'read_only': True}}
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ['username', 'password', 'email', 'phone']
+        model = UserProfile
+        fields = ['user_name', 'password', 'email', 'phone_number']
+
+
+class CodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Code
+        fields = ['number']
+
+
+class UserLoginSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['email', 'password']
         
+
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = '__all__'
+        extra_kwargs = {'user': {'read_only': True}}
+
 
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
         fields = '__all__'
+        extra_kwargs = {'user': {'read_only': True}}
 
-        
+
 class OrderSerializer(serializers.ModelSerializer):
-    orderItems = serializers.SerializerMethodField(read_only=True)
-    shippingAddress = serializers.SerializerMethodField(read_only=True)
-
-    class Meta:
+    class Meta():
         model = Order
         fields = '__all__'
-
-    def get_orderItems(self, obj):
-        items = obj.orderitem_set.all()
-        serializer = OrderItemSerializer(items, many=True)
-        return serializer.data
-
-    def get_shippingAddress(self, obj):
-        try:
-            address = ShippingAddressSerializer(
-                obj.shippingaddress, many=False).data
-        except:
-            address = False
-        return address
-
-    def get_user(self, obj):
-        user = obj.user
-        serializer = UserSerializer(user, many=False)
-        return serializer.data
+        extra_kwargs = {'user': {'read_only': True}}
