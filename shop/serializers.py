@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from .models import *
-# from django.contrib.auth.models import UserProfile
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -27,6 +26,12 @@ class UserLoginSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ['email', 'password']
+
+
+class ValidationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['phone_number']
         
 
 class ReviewSerializer(serializers.ModelSerializer):

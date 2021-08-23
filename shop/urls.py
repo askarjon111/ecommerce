@@ -22,4 +22,5 @@ urlpatterns = [
     path('registration/', UserAuth.as_view(), name='regestration'),
     path('login/', UserLogin.as_view(), name='userlogin'),
     path('profile/<int:pk>', MyProfile.as_view(), name="myprofile"),
+    path('validation/', SendOtp.as_view(), name="validation"),
 ]

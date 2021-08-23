@@ -19,6 +19,12 @@ from django.contrib.auth import authenticate, login
 from rest_framework.exceptions import AuthenticationFailed
 from datetime import datetime
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+client = Client(os.getenv('account'), os.getenv('token'))
 
 # Product CRUD
 
@@ -224,23 +230,6 @@ class DetailOrder(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class SentOtp(APIView):
-    def post(self, request):
-        account_id = "ACa0b27bb2461149d381dc475a36b2849f"
-        auth_token = "607ffc5980c0e2de499a5d0cfd1861f1"
-        number = request.data['number']
-        cliend = Client(account_id, auth_token)
-        otp = generateOTP()
-        body = "Your OTP is "+ str(otp)
-        message = client.messages.create(from_= "+998902646366", body=body, to=number)
-        if message.sid:
-            print("sent successfull")
-            return JsonResponse({"success": True})
-        else:
-            print("fail to send")
-            return JsonResponse({"success": False})
-def generateOTP():
-    return random.rangrange(100000, 999999)
 # Review
 
 class AddReview(APIView):
@@ -330,3 +319,25 @@ class MyProfile(APIView):
         user = UserProfile.objects.get(pk=request.user.pk)
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SendOtp(APIView):
+    @swagger_auto_schema(request_body=ValidationSerializer)
+    def post(self, request):
+        account_id = os.getenv('account')
+        auth_token = os.getenv('token')
+        number = request.data['phone_number']
+        otp = generateOTP()
+        body = "Your OTP is " + str(otp)
+        message = client.messages.create(to=number, from_="+17573780739",
+                                         body=body)
+        if message.sid:
+            print("sent successfull")
+            return JsonResponse({"success": True})
+        else:
+            print("fail to send")
+            return JsonResponse({"success": False})
+
+
+def generateOTP():
+    return random.randrange(100000, 999999)
