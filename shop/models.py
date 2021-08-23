@@ -1,6 +1,80 @@
 from django.db import models
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 from django.utils import timezone
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.utils.translation import gettext_lazy as _
+from django.conf import settings
+import random
+
+
+class CustomAccountManager(BaseUserManager):
+
+    def create_superuser(self, email, user_name, first_name, phone_number, password, **other_fields):
+
+        other_fields.setdefault('is_staff', True)
+        other_fields.setdefault('is_superuser', True)
+        other_fields.setdefault('is_active', True)
+
+        if other_fields.get('is_staff') is not True:
+            raise ValueError(
+                'Superuser must be assigned to is_staff=True.')
+        if other_fields.get('is_superuser') is not True:
+            raise ValueError(
+                'Superuser must be assigned to is_superuser=True.')
+
+        return self.create_user(email, user_name, first_name, phone_number, password, **other_fields)
+
+    def create_user(self, email, user_name, first_name, phone_number, password, **other_fields):
+
+        if not email:
+            raise ValueError(_('You must provide an email address'))
+
+        email = self.normalize_email(email)
+        user = self.model(email=email, user_name=user_name,
+                          first_name=first_name, phone_number=phone_number, ** other_fields)
+        user.set_password(password)
+        user.save()
+        return user
+
+
+class UserProfile(AbstractBaseUser, PermissionsMixin):
+    email = models.EmailField(_('email address'), unique=True)
+    user_name = models.CharField(max_length=150, unique=True)
+    first_name = models.CharField(max_length=150, blank=True)
+    phone_number = models.CharField(max_length=12, unique=True)
+    start_date = models.DateTimeField(default=timezone.now)
+    is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=False)
+
+    objects = CustomAccountManager()
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['user_name', 'first_name', 'phone_number']
+
+    def __str__(self):
+        return self.user_name
+
+
+class Code(models.Model):
+    number = models.CharField(max_length=5, blank=True)
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.number
+
+    def save(self, *args, **kwargs):
+        number_list = [x for x in range(10)]
+        code_items = []
+
+        for i in range(5):
+            num = random.choice(number_list)
+            code_items.append(num)
+        
+        code_string = "".join(str(item) for item in code_items)
+        self.number = code_string
+
+        super().save(*args, **kwargs)
+
 
 
 class Category(models.Model):
@@ -25,9 +99,9 @@ class Product(models.Model):
     price = models.DecimalField(
         max_digits=10, decimal_places=2)
     stock = models.IntegerField(null=True, blank=True, default=0)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ManyToManyField(Category)
     description = models.TextField(blank=True, null=True)
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now=True)
     featured = models.BooleanField(default=False)
     views = models.IntegerField(default=0)
@@ -38,8 +112,7 @@ class Product(models.Model):
 
 class Review(models.Model):
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    name = models.CharField(max_length=200, null=True, blank=True)
+    user = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True)
     rating = models.IntegerField(null=True, blank=True, default=0)
     comment = models.TextField(null=True, blank=True)
     createdAt = models.DateTimeField(auto_now_add=True)
@@ -48,35 +121,25 @@ class Review(models.Model):
         return str(self.rating)
 
 
+class OrderItem(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
+    user = models.ForeignKey(
+        UserProfile, on_delete=models.SET_NULL, blank=True, null=True)
+    qty = models.IntegerField(null=True, blank=True, default=0)
+
+    def __str__(self):
+        return str(self.product)
+
+
 class Order(models.Model):
+    orderItem = models.ManyToManyField(OrderItem)
     paymentMethod = models.CharField(max_length=200, null=True, blank=True)
-    taxPrice = models.DecimalField(
-        max_digits=7, decimal_places=2, null=True, blank=True)
-    shippingPrice = models.DecimalField(
-        max_digits=7, decimal_places=2, null=True, blank=True)
-    totalPrice = models.DecimalField(
-        max_digits=7, decimal_places=2, null=True, blank=True)
     isPaid = models.BooleanField(default=False)
     paidAt = models.DateTimeField(auto_now_add=False, null=True, blank=True)
     isDelivered = models.BooleanField(default=False)
     deliveredAt = models.DateTimeField(
         auto_now_add=False, null=True, blank=True)
     createdAt = models.DateTimeField(auto_now_add=True)
-    _id = models.AutoField(primary_key=True, editable=False)
 
     def __str__(self):
         return str(self.createdAt)
-
-
-class OrderItem(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
-    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True)
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
-    name = models.CharField(max_length=200, null=True, blank=True)
-    qty = models.IntegerField(null=True, blank=True, default=0)
-    price = models.DecimalField(
-        max_digits=7, decimal_places=2, null=True, blank=True)
-    image = models.CharField(max_length=200, null=True, blank=True)
-
-    def __str__(self):
-        return str(self.name)
