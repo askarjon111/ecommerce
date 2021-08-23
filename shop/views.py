@@ -8,6 +8,7 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.core.exceptions import ValidationError
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
+from shop.utils import phone_validator, password_generator, otp_generator
 
 from .models import *
 from .serializers import *
@@ -308,3 +309,68 @@ class MyProfile(APIView):
         user = UserProfile.objects.get(pk=request.user.pk)
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def send_otp(phone):
+    if phone:
+        key = otp_generator()
+        phone = str(phone)
+        otp_key = str(key)
+
+        return otp_key
+    else:
+        return False
+
+
+class ValidatePhoneSendOTP(APIView):
+    '''
+    This class view takes phone number and if it doesn't exists already then it sends otp for
+    first coming phone numbers'''
+
+    def post(self, request, *args, **kwargs):
+        phone_number = request.data.get('phone')
+        if phone_number:
+            phone = str(phone_number)
+            user = UserProfile.objects.filter(phone__iexact=phone)
+            if user.exists():
+                return Response({'status': False, 'detail': 'Phone Number already exists'})
+                # logic to send the otp and store the phone number and that otp in table.
+            else:
+                otp = send_otp(phone)
+                print(phone, otp)
+                if otp:
+                    otp = str(otp)
+                    count = 0
+                    old = PhoneOTP.objects.filter(phone__iexact=phone)
+                    if old.exists():
+                        count = old.first().count
+                        old.first().count = count + 1
+                        old.first().save()
+
+                    else:
+                        count = count + 1
+
+                        PhoneOTP.objects.create(
+                            phone=phone,
+                            otp=otp,
+                            count=count
+
+                        )
+                    if count > 7:
+                        return Response({
+                            'status': False,
+                            'detail': 'Maximum otp limits reached. Kindly support our customer care or try with different number'
+                        })
+
+                else:
+                    return Response({
+                        'status': 'False', 'detail': "OTP sending error. Please try after some time."
+                    })
+
+                return Response({
+                    'status': True, 'detail': 'Otp has been sent successfully.'
+                })
+        else:
+            return Response({
+                'status': 'False', 'detail': "I haven't received any phone number. Please do a POST request."
+            })

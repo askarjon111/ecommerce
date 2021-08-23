@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import *
-# from django.contrib.auth.models import UserProfile
+from django.contrib.auth import authenticate
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -20,13 +20,50 @@ class CategorySerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['user_name', 'password', 'email', 'phone_number']
+        fields = ['user_name', 'password', 'email', 'phone']
 
 
-class CodeSerializer(serializers.ModelSerializer):
+class CreateUserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Code
-        fields = ['number']
+        model = UserProfile
+        fields = ('phone', 'password')
+        extra_kwargs = {'password': {'write_only': True}, }
+
+    def create(self, validated_data):
+        user = UserProfile.objects.create_user(**validated_data)
+        return user
+
+
+class LoginUserSerializer(serializers.Serializer):
+    phone = serializers.CharField()
+    password = serializers.CharField(
+        style={'input_type': 'password'}, trim_whitespace=False)
+
+    def validate(self, attrs):
+        phone = attrs.get('phone')
+        password = attrs.get('password')
+
+        if phone and password:
+            if UserProfile.objects.filter(phone=phone).exists():
+                user = authenticate(request=self.context.get('request'),
+                                    phone=phone, password=password)
+
+            else:
+                msg = {'detail': 'Phone number is not registered.',
+                       'register': False}
+                raise serializers.ValidationError(msg)
+
+            if not user:
+                msg = {
+                    'detail': 'Unable to log in with provided credentials.', 'register': True}
+                raise serializers.ValidationError(msg, code='authorization')
+
+        else:
+            msg = 'Must include "username" and "password".'
+            raise serializers.ValidationError(msg, code='authorization')
+
+        attrs['user'] = user
+        return attrs
 
 
 class UserLoginSerializer(serializers.ModelSerializer):
