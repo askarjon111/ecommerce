@@ -263,10 +263,36 @@ class UserAuth(APIView):
     @swagger_auto_schema(request_body=UserSerializer)
     def post(self, request, format=None):
         serializer = UserSerializer(data=request.data)
+        account_id = os.getenv('account')
+        auth_token = os.getenv('token')
+        phone = request.data['phone_number']
+        otp = random.randrange(100000, 999999)
+        body = "Your OTP is " + str(otp)
+        message = client.messages.create(to=phone, from_="+17573780739",
+                                         body=body)
         if serializer.is_valid():
+            serializer.validated_data['code'] = str(otp)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class Validate(APIView):
+    @swagger_auto_schema(request_body=ValidationSerializer)
+    def put(self, request, pk, format=None):
+        permission_classes = [IsAuthenticated]
+        user = UserProfile.objects.get(pk=pk)
+        serializer = ValidationSerializer(user, data=request.data)
+        
+        if serializer.is_valid():
+            code = serializer.validated_data['code']
+            if code == user.code:
+                user.is_active=True
+                user.code="null"
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
 
 class UserLogin(ObtainAuthToken):
     def post(self, request):
@@ -320,24 +346,16 @@ class MyProfile(APIView):
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-
-class SendOtp(APIView):
     @swagger_auto_schema(request_body=ValidationSerializer)
-    def post(self, request):
-        account_id = os.getenv('account')
-        auth_token = os.getenv('token')
-        number = request.data['phone_number']
-        otp = generateOTP()
-        body = "Your OTP is " + str(otp)
-        message = client.messages.create(to=number, from_="+17573780739",
-                                         body=body)
-        if message.sid:
-            print("sent successfull")
-            return JsonResponse({"success": True})
-        else:
-            print("fail to send")
-            return JsonResponse({"success": False})
-
-
-def generateOTP():
-    return random.randrange(100000, 999999)
+    def put(self, request, format=None):
+        permission_classes = [IsAuthenticated]
+        user = request.user
+        serializer = ValidationSerializer(user, data=request.data)
+        if serializer.is_valid():
+            code = request.data['code']
+            if code == self.post.otp:
+                is_active = serializer.validated_data['is_active']
+                is_active=True
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

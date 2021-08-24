@@ -19,7 +19,8 @@ class CategorySerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['user_name', 'password', 'email', 'phone_number']
+        fields = ['user_name', 'password', 'email', 'phone_number', 'code']
+        extra_kwargs = {'code': {'read_only': True}}
 
 
 class UserLoginSerializer(serializers.ModelSerializer):
@@ -31,7 +32,9 @@ class UserLoginSerializer(serializers.ModelSerializer):
 class ValidationSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['phone_number']
+        fields = ['code', 'is_active']
+        extra_kwargs = {'is_active': {'read_only': True}}
+
         
 
 class ReviewSerializer(serializers.ModelSerializer):

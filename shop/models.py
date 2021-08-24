@@ -41,10 +41,11 @@ class UserProfile(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(_('email address'), unique=True)
     user_name = models.CharField(max_length=150, unique=True)
     first_name = models.CharField(max_length=150, blank=True)
-    phone_number = models.CharField(max_length=12, unique=True)
+    phone_number = models.CharField(max_length=13, unique=True)
     start_date = models.DateTimeField(default=timezone.now)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
+    code = models.CharField(blank=True, null=True, max_length=15)
 
     objects = CustomAccountManager()
 
@@ -55,25 +56,25 @@ class UserProfile(AbstractBaseUser, PermissionsMixin):
         return self.user_name
 
 
-class Code(models.Model):
-    number = models.CharField(max_length=5, blank=True)
-    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+# class Code(models.Model):
+#     number = models.CharField(max_length=5, blank=True)
+#     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
 
-    def __str__(self):
-        return self.number
+#     def __str__(self):
+#         return self.number
 
-    def save(self, *args, **kwargs):
-        number_list = [x for x in range(10)]
-        code_items = []
+#     def save(self, *args, **kwargs):
+#         number_list = [x for x in range(10)]
+#         code_items = []
 
-        for i in range(5):
-            num = random.choice(number_list)
-            code_items.append(num)
+#         for i in range(5):
+#             num = random.choice(number_list)
+#             code_items.append(num)
         
-        code_string = "".join(str(item) for item in code_items)
-        self.number = code_string
+#         code_string = "".join(str(item) for item in code_items)
+#         self.number = code_string
 
-        super().save(*args, **kwargs)
+#         super().save(*args, **kwargs)
 
 
 
