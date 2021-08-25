@@ -1,30 +1,47 @@
+import os
+import random
+from datetime import datetime
+
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.http import Http404, JsonResponse
-from django.http import Http404
 from django.shortcuts import get_object_or_404
+from dotenv import load_dotenv
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.generics import GenericAPIView
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from twilio.rest import Client
-import random
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from django.core.exceptions import ValidationError
-from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.authtoken.models import Token
 
 from .models import *
 from .serializers import *
-from django.contrib.auth import authenticate, login
-from rest_framework.exceptions import AuthenticationFailed
-from datetime import datetime
-
-import os
-from dotenv import load_dotenv
+from .serializers import GoogleSocialAuthSerializer
 
 load_dotenv()
 
 client = Client(os.getenv('account'), os.getenv('token'))
+
+
+class GoogleSocialAuthView(GenericAPIView):
+
+    serializer_class = GoogleSocialAuthSerializer
+
+    def post(self, request):
+        """
+        POST with "auth_token"
+        Send an idtoken as from google to get user information
+        """
+
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = ((serializer.validated_data)['auth_token'])
+        return Response(data, status=status.HTTP_200_OK)
 
 # Product CRUD
 
@@ -257,6 +274,7 @@ class ListUsers(APIView):
         users = UserProfile.objects.all()
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
+
 
 
 class UserAuth(APIView):

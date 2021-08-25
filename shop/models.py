@@ -37,6 +37,9 @@ class CustomAccountManager(BaseUserManager):
         return user
 
 
+AUTH_PROVIDERS = {'facebook': 'facebook',
+                  'google': 'google', 'email': 'email', }
+
 class UserProfile(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(_('email address'), unique=True)
     user_name = models.CharField(max_length=150, unique=True)
@@ -46,6 +49,9 @@ class UserProfile(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
     code = models.CharField(blank=True, null=True, max_length=15)
+    auth_provider = models.CharField(
+        max_length=255, blank=False,
+        null=False, default=AUTH_PROVIDERS.get('email'))
 
     objects = CustomAccountManager()
 
@@ -54,28 +60,8 @@ class UserProfile(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.user_name
-
-
-# class Code(models.Model):
-#     number = models.CharField(max_length=5, blank=True)
-#     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
-
-#     def __str__(self):
-#         return self.number
-
-#     def save(self, *args, **kwargs):
-#         number_list = [x for x in range(10)]
-#         code_items = []
-
-#         for i in range(5):
-#             num = random.choice(number_list)
-#             code_items.append(num)
-        
-#         code_string = "".join(str(item) for item in code_items)
-#         self.number = code_string
-
-#         super().save(*args, **kwargs)
-
+    
+    
 
 
 class Category(models.Model):

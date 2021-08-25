@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from .views import *
 
 urlpatterns = [
@@ -23,4 +23,6 @@ urlpatterns = [
     path('login/', UserLogin.as_view(), name='userlogin'),
     path('profile/<int:pk>', MyProfile.as_view(), name="myprofile"),
     path('validate/<int:pk>', Validate.as_view(), name="validate"),
+
+    path('google/', GoogleSocialAuthView.as_view()),
 ]
