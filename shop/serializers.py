@@ -35,7 +35,6 @@ class ValidationSerializer(serializers.ModelSerializer):
         fields = ['code', 'is_active']
         extra_kwargs = {'is_active': {'read_only': True}}
 
-        
 
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
