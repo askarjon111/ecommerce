@@ -97,11 +97,6 @@ REST_FRAMEWORK = {
     ]
 }
 
-AUTHENTICATION_BACKENDS = (
-    'rest_framework_social_oauth2.backends.DjangoOAuth2',
-    'django.contrib.auth.backends.ModelBackend',
-)
-
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'

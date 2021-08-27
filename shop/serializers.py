@@ -21,7 +21,7 @@ class GoogleSocialAuthSerializer(serializers.Serializer):
         if user_data['aud'] != os.getenv('GOOGLE_CLIENT_ID'):
 
             raise AuthenticationFailed('oops, who are you?')
-
+        print(user_data)
         user_id = user_data['sub']
         email = user_data['email']
         name = user_data['name']
@@ -48,14 +48,9 @@ class CategorySerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['user_name', 'password', 'email', 'phone_number', 'code']
+        fields = ['username', 'password', 'email', 'phone_number', 'code']
         extra_kwargs = {'code': {'read_only': True}}
 
-
-class UserLoginSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = ['email', 'password']
 
 
 class ValidationSerializer(serializers.ModelSerializer):

@@ -14,7 +14,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from twilio.rest import Client
@@ -22,6 +22,7 @@ from twilio.rest import Client
 from .models import *
 from .serializers import *
 from .serializers import GoogleSocialAuthSerializer
+import jwt
 
 load_dotenv()
 
@@ -29,6 +30,7 @@ client = Client(os.getenv('account'), os.getenv('token'))
 
 
 class GoogleSocialAuthView(GenericAPIView):
+    permission_classes = [AllowAny]
 
     serializer_class = GoogleSocialAuthSerializer
 
@@ -310,32 +312,7 @@ class Validate(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-
-class UserLogin(ObtainAuthToken):
-    def post(self, request):
-        serializer = UserLoginSerializer(data=request.data)
-        if serializer.is_valid():
-            user_name = serializer.validated_data['user_name']
-            password = serializer.validated_data['password']
-
-            user = UserProfile.objects.filter(user_name=user_name).first()
-
-            if user is None:
-                raise AuthenticationFailed('User not found')
-            
-            if not user.check_password(password):
-                raise AuthenticationFailed('Incorrect password')
-            
-            payload = {
-                'id': user.id,
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
-                'iat': datetime.datetime.utcnow()
-            }
-
-            token = jwt.encode(payload, 'secret', algorithm='HS256').decode('utf-8')
-
-            return Response('jwt', token)
+    
 
 
 class MyProfile(APIView):
