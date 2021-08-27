@@ -1,5 +1,34 @@
 from rest_framework import serializers
 from .models import *
+from . import google
+from .register import register_social_user
+import os
+from rest_framework.exceptions import AuthenticationFailed
+
+
+class GoogleSocialAuthSerializer(serializers.Serializer):
+    auth_token = serializers.CharField()
+
+    def validate_auth_token(self, auth_token):
+        user_data = google.Google.validate(auth_token)
+        try:
+            user_data['sub']
+        except:
+            raise serializers.ValidationError(
+                'The token is invalid or expired. Please login again.'
+            )
+
+        if user_data['aud'] != os.getenv('GOOGLE_CLIENT_ID'):
+
+            raise AuthenticationFailed('oops, who are you?')
+        print(user_data)
+        user_id = user_data['sub']
+        email = user_data['email']
+        name = user_data['name']
+        provider = 'google'
+
+        return register_social_user(
+            provider=provider, user_id=user_id, email=email, name=name)
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -19,14 +48,9 @@ class CategorySerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['user_name', 'password', 'email', 'phone_number', 'code']
+        fields = ['username', 'password', 'email', 'phone_number', 'code']
         extra_kwargs = {'code': {'read_only': True}}
 
-
-class UserLoginSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = ['email', 'password']
 
 
 class ValidationSerializer(serializers.ModelSerializer):

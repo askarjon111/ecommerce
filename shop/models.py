@@ -5,77 +5,92 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 import random
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class CustomAccountManager(BaseUserManager):
 
-    def create_superuser(self, email, user_name, first_name, phone_number, password, **other_fields):
-
-        other_fields.setdefault('is_staff', True)
-        other_fields.setdefault('is_superuser', True)
-        other_fields.setdefault('is_active', True)
-
-        if other_fields.get('is_staff') is not True:
-            raise ValueError(
-                'Superuser must be assigned to is_staff=True.')
-        if other_fields.get('is_superuser') is not True:
-            raise ValueError(
-                'Superuser must be assigned to is_superuser=True.')
-
-        return self.create_user(email, user_name, first_name, phone_number, password, **other_fields)
-
-    def create_user(self, email, user_name, first_name, phone_number, password, **other_fields):
-
+    def create_user(self, email, password=None):
+        """
+        Creates and saves a User with the given email, date of
+        birth and password.
+        """
         if not email:
-            raise ValueError(_('You must provide an email address'))
+            raise ValueError('Users must have an email')
 
-        email = self.normalize_email(email)
-        user = self.model(email=email, user_name=user_name,
-                          first_name=first_name, phone_number=phone_number, ** other_fields)
+        user = self.model(
+            email=email,
+        )
+
         user.set_password(password)
-        user.save()
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None):
+        """
+        Creates and saves a superuser with the given email, date of
+        birth and password.
+        """
+        user = self.create_user(
+            email=email,
+            password=password,
+        )
+        user.is_admin = True
+        user.save(using=self._db)
         return user
 
 
-class UserProfile(AbstractBaseUser, PermissionsMixin):
-    email = models.EmailField(_('email address'), unique=True)
-    user_name = models.CharField(max_length=150, unique=True)
-    first_name = models.CharField(max_length=150, blank=True)
-    phone_number = models.CharField(max_length=13, unique=True)
-    start_date = models.DateTimeField(default=timezone.now)
-    is_staff = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=False)
-    code = models.CharField(blank=True, null=True, max_length=15)
+AUTH_PROVIDERS = {'facebook': 'facebook',
+                  'google': 'google', 'email': 'email', }
+
+class UserProfile(AbstractBaseUser):
+    email = models.EmailField(unique=True)
+    username = models.CharField(max_length=255)
+    first_name = models.CharField(max_length=255, null=True)
+    last_name = models.CharField(max_length=255, null=True)
+    code = models.CharField(max_length=255, null=True)
+    phone_number = models.CharField(max_length=255, null=True)
+    auth_provider = models.CharField(
+        max_length=255, blank=False,
+        null=False, default=AUTH_PROVIDERS.get('email'))
+
+    is_active = models.BooleanField(default=True)
+    is_admin = models.BooleanField(default=False)
 
     objects = CustomAccountManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['user_name', 'first_name', 'phone_number']
+    REQUIRED_FIELDS = []
 
     def __str__(self):
-        return self.user_name
+        return f'{self.email}'
 
+    def has_perm(self, perm, obj=None):
+        """Does the user have a specific permission?"""
+        # Simplest possible answer: Yes, always
+        return True
 
-# class Code(models.Model):
-#     number = models.CharField(max_length=5, blank=True)
-#     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    def has_module_perms(self, app_label):
+        """Does the user have permissions to view the app `app_label`?"""
+        # Simplest possible answer: Yes, always
+        return True
 
-#     def __str__(self):
-#         return self.number
+    @property
+    def is_staff(self):
+        """Is the user a member of staff?"""
+        # Simplest possible answer: All admins are staff
+        return self.is_admin
+    
+    def __str__(self):
+        return self.email
 
-#     def save(self, *args, **kwargs):
-#         number_list = [x for x in range(10)]
-#         code_items = []
-
-#         for i in range(5):
-#             num = random.choice(number_list)
-#             code_items.append(num)
-        
-#         code_string = "".join(str(item) for item in code_items)
-#         self.number = code_string
-
-#         super().save(*args, **kwargs)
-
+    def tokens(self):
+        refresh = RefreshToken.for_user(self)
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token)
+        }
+    
 
 
 class Category(models.Model):

@@ -1,30 +1,49 @@
+import os
+import random
+from datetime import datetime
+
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.http import Http404, JsonResponse
-from django.http import Http404
 from django.shortcuts import get_object_or_404
+from dotenv import load_dotenv
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.generics import GenericAPIView
+from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from twilio.rest import Client
-import random
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from django.core.exceptions import ValidationError
-from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.authtoken.models import Token
 
 from .models import *
 from .serializers import *
-from django.contrib.auth import authenticate, login
-from rest_framework.exceptions import AuthenticationFailed
-from datetime import datetime
-
-import os
-from dotenv import load_dotenv
+from .serializers import GoogleSocialAuthSerializer
+import jwt
 
 load_dotenv()
 
 client = Client(os.getenv('account'), os.getenv('token'))
+
+
+class GoogleSocialAuthView(GenericAPIView):
+    permission_classes = [AllowAny]
+
+    serializer_class = GoogleSocialAuthSerializer
+
+    def post(self, request):
+        """
+        POST with "auth_token"
+        Send an idtoken as from google to get user information
+        """
+
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = ((serializer.validated_data)['auth_token'])
+        return Response(data, status=status.HTTP_200_OK)
 
 # Product CRUD
 
@@ -259,6 +278,7 @@ class ListUsers(APIView):
         return Response(serializer.data)
 
 
+
 class UserAuth(APIView):
     @swagger_auto_schema(request_body=UserSerializer)
     def post(self, request, format=None):
@@ -292,32 +312,7 @@ class Validate(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-
-class UserLogin(ObtainAuthToken):
-    def post(self, request):
-        serializer = UserLoginSerializer(data=request.data)
-        if serializer.is_valid():
-            user_name = serializer.validated_data['user_name']
-            password = serializer.validated_data['password']
-
-            user = UserProfile.objects.filter(user_name=user_name).first()
-
-            if user is None:
-                raise AuthenticationFailed('User not found')
-            
-            if not user.check_password(password):
-                raise AuthenticationFailed('Incorrect password')
-            
-            payload = {
-                'id': user.id,
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
-                'iat': datetime.datetime.utcnow()
-            }
-
-            token = jwt.encode(payload, 'secret', algorithm='HS256').decode('utf-8')
-
-            return Response('jwt', token)
+    
 
 
 class MyProfile(APIView):
