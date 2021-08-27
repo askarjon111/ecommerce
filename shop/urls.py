@@ -9,10 +9,7 @@ urlpatterns = [
     path('', ListProducts.as_view(), name='index'),
     path('addproduct/', AddProduct.as_view(), name='addproduct'),
     path('product/<int:pk>', DetailProduct.as_view(), name="productdetail"),
-    path('login/', TokenObtainPairView.as_view(),
-         name='token_obtain_pair'),
-    path('token/refresh/', TokenRefreshView.as_view(),
-         name='token_refresh'),
+    
     path('mycart/', MyCart.as_view(), name="mycart"),
     path('addtocart/', AddToCart.as_view(), name='addtocart'),
     path('cart/<int:pk>', CartItem.as_view(), name="cartitem"),
@@ -30,5 +27,11 @@ urlpatterns = [
     path('profile/<int:pk>', MyProfile.as_view(), name="myprofile"),
     path('validate/<int:pk>', Validate.as_view(), name="validate"),
 
+    path('login/', TokenObtainPairView.as_view(),
+         name='token_obtain_pair'),
+    path('token/refresh/', TokenRefreshView.as_view(),
+         name='token_refresh'),
+
     path('google/', GoogleSocialAuthView.as_view()),
+    path('facebook/', FacebookSocialAuthView.as_view()),
 ]
