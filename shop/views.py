@@ -186,6 +186,8 @@ class DetailProduct(APIView):
 
 
 class EditProduct(APIView):
+    authentication_classes = [authentication.BasicAuthentication]
+    permission_classes = [IsAdminUser]
     def get_object(self, pk):
         try:
             return Product.objects.get(pk=pk)
@@ -204,6 +206,8 @@ class EditProduct(APIView):
 
 
 class DeleteProduct(APIView):
+    authentication_classes = [authentication.BasicAuthentication]
+    permission_classes = [IsAdminUser]
     def get_object(self, pk):
         try:
             return Product.objects.get(pk=pk)
@@ -267,6 +271,8 @@ class DetailCategory(APIView):
 # Cart CRUD
 
 class MyCart(APIView):
+    authentication_classes = [authentication.BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         permission_classes = [IsAuthenticated]
         orderitems = OrderItem.objects.filter(user=request.user)
@@ -275,6 +281,8 @@ class MyCart(APIView):
 
 
 class AddToCart(APIView):
+    authentication_classes = [authentication.BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     @swagger_auto_schema(request_body=OrderItemSerializer)
     def post(self, request, format=None):
         permission_classes = [IsAuthenticated]
@@ -287,6 +295,8 @@ class AddToCart(APIView):
 
 
 class CartItem(APIView):
+    authentication_classes = [authentication.BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     def get_object(self, pk):
         try:
             return OrderItem.objects.get(pk=pk)
@@ -299,7 +309,17 @@ class CartItem(APIView):
         serializer = OrderItemSerializer(orderitem)
         return Response(serializer.data)
 
-    @swagger_auto_schema(request_body=ProductSerializer)
+class EditCartItem(APIView):
+    authentication_classes = [authentication.BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk):
+        try:
+            return OrderItem.objects.get(pk=pk)
+        except OrderItem.DoesNotExist:
+            raise Http404
+
+    @swagger_auto_schema(request_body=OrderItemEditSerializer)
     def put(self, request, pk, format=None):
         permission_classes = [IsAuthenticated]
         orderitem = self.get_object(pk)
@@ -308,6 +328,17 @@ class CartItem(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DeleteCartItem(APIView):
+    authentication_classes = [authentication.BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk):
+        try:
+            return OrderItem.objects.get(pk=pk)
+        except OrderItem.DoesNotExist:
+            raise Http404
 
     def delete(self, request, pk, format=None):
         permission_classes = [IsAuthenticated]
@@ -319,31 +350,35 @@ class CartItem(APIView):
 # Order CRUD
 
 class ListOrders(APIView):
+    authentication_classes = [authentication.BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
-        permission_classes = [IsAuthenticated]
         orders = Order.objects.filter(user=request.user)
         serializer = OrderSerializer(orders, many=True)
         return Response(serializer.data)
 
 
 class Checkout(APIView):
+    authentication_classes = [authentication.BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     @swagger_auto_schema(request_body=OrderSerializer)
     def post(self, request, format=None):
-        permission_classes = [IsAuthenticated]
         serializer = OrderSerializer(data=request.data)
-        
         if serializer.is_valid():
             for i in serializer.validated_data['orderItem']:
                 if i.user == request.user:
                     pass
                 else:
                     raise ValidationError('Bu orderitem sizniki emas')
+            serializer.validated_data['user'] = request.user
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class DetailOrder(APIView):
+    authentication_classes = [authentication.BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     def get_object(self, pk):
         try:
             return Order.objects.get(pk=pk)
@@ -355,14 +390,38 @@ class DetailOrder(APIView):
         serializer = OrderSerializer(order)
         return Response(serializer.data)
 
-    @swagger_auto_schema(request_body=ProductSerializer)
-    def put(self, request, pk, format=None):
+
+class EditOrder(APIView):
+    authentication_classes = [authentication.BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk):
+        try:
+            return Order.objects.get(pk=pk)
+        except Order.DoesNotExist:
+            raise Http404
+
+    @swagger_auto_schema(request_body=EditOrderSerializer)
+    def patch(self, request, pk, format=None):
         order = self.get_object(pk)
-        serializer = OrderSerializer(order, data=request.data)
+        orderItem = order.orderItem
+        print(order.orderItem)
+        serializer = OrderSerializer(order, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DeleteOrder(APIView):
+    authentication_classes = [authentication.BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk):
+        try:
+            return Order.objects.get(pk=pk)
+        except Order.DoesNotExist:
+            raise Http404
 
     def delete(self, request, pk, format=None):
         order = self.get_object(pk)
@@ -373,19 +432,20 @@ class DetailOrder(APIView):
 # Review
 
 class AddReview(APIView):
+    authentication_classes = [authentication.BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     @swagger_auto_schema(request_body=ReviewSerializer)
     def post(self, request, format=None):
-        permission_classes = [IsAuthenticated]
         serializer = ReviewSerializer(data=request.data)
-        if serializer.is_valid():
-            if serializer.validated_data['rating'] == 0:
+        if request.data['rating'] == 0:
                 raise ValidationError('Iltimos reytingni kiriting!')
-                return Response(serializer.validated_data['rating'], status=status.HTTP_400_BAD_REQUEST)
-            else:    
-                serializer.validated_data['user'] = request.user
-                serializer.save()
+                return Response(request.data['rating'], status=status.HTTP_400_BAD_REQUEST)
+        elif request.data['product'] == 0:
+            raise ValidationError('Iltimos mahsulotni tanlang kiriting!')
+            return Response(request.data['product'], status=status.HTTP_400_BAD_REQUEST)
+        elif serializer.is_valid():
+            serializer.validated_data['user'] = request.user
+            serializer.save()
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-

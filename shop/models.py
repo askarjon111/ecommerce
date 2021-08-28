@@ -149,6 +149,7 @@ class OrderItem(models.Model):
 
 class Order(models.Model):
     orderItem = models.ManyToManyField(OrderItem)
+    address = models.CharField(max_length=500, blank=True, null=True)
     paymentMethod = models.CharField(max_length=200, null=True, blank=True)
     isPaid = models.BooleanField(default=False)
     paidAt = models.DateTimeField(auto_now_add=False, null=True, blank=True)
@@ -156,6 +157,7 @@ class Order(models.Model):
     deliveredAt = models.DateTimeField(
         auto_now_add=False, null=True, blank=True)
     createdAt = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, null=True)
 
     def __str__(self):
         return str(self.createdAt)

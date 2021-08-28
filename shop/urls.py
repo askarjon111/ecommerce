@@ -17,7 +17,9 @@ urlpatterns = [
     # Cart  CRUD
     path('mycart/', MyCart.as_view(), name="mycart"),
     path('mycart/add/', AddToCart.as_view(), name='addtocart'),
-    path('mycart/<int:pk>', CartItem.as_view(), name="cartitem"),
+    path('mycart/<int:pk>', CartItem.as_view(), name="cartitemdetail"),
+    path('mycart/edit/<int:pk>', EditCartItem.as_view(), name="editcartitem"),
+    path('mycart/delete/<int:pk>', DeleteCartItem.as_view(), name="deletecartitem"),
 
     # Category CRUD
     path('categories/', ListCategories.as_view(), name="category"),
@@ -26,6 +28,9 @@ urlpatterns = [
     # Orders CRUD
     path('orders/', ListOrders.as_view(), name="orders"),
     path('orders/add/', Checkout.as_view(), name="checkout"),
+    path('orders/<int:pk>', DetailOrder.as_view(), name="detailorder"),
+    path('orders/edit/<int:pk>', EditOrder.as_view(), name="editorder"),
+    path('orders/delete/<int:pk>', DeleteOrder.as_view(), name="deleteorder"),
 
     # Add review
     path('addreview/', AddReview.as_view(), name="addreview"),

@@ -100,8 +100,32 @@ class OrderItemSerializer(serializers.ModelSerializer):
         extra_kwargs = {'user': {'read_only': True}}
 
 
+class OrderItemEditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['qty']
+        extra_kwargs = {'author': {'read_only': True}}
+
+
 class OrderSerializer(serializers.ModelSerializer):
     class Meta():
         model = Order
         fields = '__all__'
-        extra_kwargs = {'user': {'read_only': True}}
+        extra_kwargs = {'user': {'read_only': True},
+                        'isPaid': {'read_only': True},
+                        'isDelivered': {'read_only': True},
+                        'deliveredAt': {'read_only': True},
+                        'paidAt': {'read_only': True}}
+
+
+class EditOrderSerializer(serializers.ModelSerializer):
+    class Meta():
+        model = Order
+        fields = '__all__'
+
+        extra_kwargs = {'user': {'read_only': True},
+                        'isPaid': {'read_only': True},
+                        'isDelivered': {'read_only': True},
+                        'deliveredAt': {'read_only': True},
+                        'orderItem': {'read_only': True},
+                        'paidAt': {'read_only': True}}
