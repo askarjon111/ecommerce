@@ -46,15 +46,15 @@ AUTH_PROVIDERS = {'facebook': 'facebook',
 class UserProfile(AbstractBaseUser):
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=255)
-    first_name = models.CharField(max_length=255, null=True)
-    last_name = models.CharField(max_length=255, null=True)
-    code = models.CharField(max_length=255, null=True)
-    phone_number = models.CharField(max_length=255, null=True)
+    first_name = models.CharField(max_length=255, blank=True, null=True)
+    last_name = models.CharField(max_length=255, blank=True, null=True)
+    code = models.CharField(max_length=255, blank=True, null=True)
+    phone_number = models.CharField(max_length=255, blank=True, null=True)
     auth_provider = models.CharField(
         max_length=255, blank=False,
         null=False, default=AUTH_PROVIDERS.get('email'))
 
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)
 
     objects = CustomAccountManager()

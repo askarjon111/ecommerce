@@ -74,7 +74,8 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ['username', 'password', 'email', 'phone_number', 'code']
-        extra_kwargs = {'code': {'read_only': True}}
+        extra_kwargs = {'code': {'read_only': True},
+                        'password': {'write_only': True}}
 
 
 

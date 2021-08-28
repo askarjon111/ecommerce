@@ -9,12 +9,12 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 from dotenv import load_dotenv
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status
+from rest_framework import status, authentication
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
+from rest_framework.permissions import *
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from twilio.rest import Client
@@ -27,6 +27,94 @@ import jwt
 load_dotenv()
 
 client = Client(os.getenv('account'), os.getenv('token'))
+
+
+# User Auth
+
+class ListUsers(APIView):
+    def get(self, request):
+        permission_classes = [IsAdminUser]
+        users = UserProfile.objects.all()
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data)
+
+
+class UserAuth(APIView):
+    @swagger_auto_schema(request_body=UserSerializer)
+    def post(self, request, format=None):
+        serializer = UserSerializer(data=request.data)
+        account_id = os.getenv('account')
+        auth_token = os.getenv('token')
+        phone = request.data['phone_number']
+        otp = random.randrange(100000, 999999)
+        body = "Your OTP is " + str(otp)
+        message = client.messages.create(to=phone, from_="+17573780739",
+                                         body=body)
+        if serializer.is_valid():
+            serializer.validated_data['code'] = str(otp)
+            user = UserProfile.objects.create_user(email=serializer.validated_data['email'])
+            user.set_password(serializer.validated_data['password'])
+            user.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class Validate(APIView):
+    @swagger_auto_schema(request_body=ValidationSerializer)
+    def put(self, request, pk, format=None):
+        permission_classes = [IsAuthenticated]
+        user = UserProfile.objects.get(pk=pk)
+        serializer = ValidationSerializer(user, data=request.data)
+
+        if serializer.is_valid():
+            code = serializer.validated_data['code']
+            if code == user.code:
+                user.is_active = True
+                user.code = "null"
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class MyProfile(APIView):
+    def get_object(self, request):
+        try:
+            return UserProfile.objects.get(pk=request.user.pk)
+        except UserProfile.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk):
+        user = UserProfile.objects.get(pk=request.user.pk)
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+
+    @swagger_auto_schema(request_body=UserSerializer)
+    def put(self, request, pk, format=None):
+        user = UserProfile.objects.get(pk=request.user.pk)
+        serializer = UserSerializer(user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, format=None):
+        user = UserProfile.objects.get(pk=request.user.pk)
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @swagger_auto_schema(request_body=ValidationSerializer)
+    def put(self, request, format=None):
+        permission_classes = [IsAuthenticated]
+        user = request.user
+        serializer = ValidationSerializer(user, data=request.data)
+        if serializer.is_valid():
+            code = request.data['code']
+            if code == self.post.otp:
+                is_active = serializer.validated_data['is_active']
+                is_active = True
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class GoogleSocialAuthView(GenericAPIView):
@@ -71,9 +159,10 @@ class ListProducts(APIView):
 
 
 class AddProduct(APIView):
+    authentication_classes = [authentication.BasicAuthentication]
+    permission_classes = [IsAdminUser]
     @swagger_auto_schema(request_body=ProductSerializer)
     def post(self, request, format=None):
-        permission_classes = [IsAdminUser]
         serializer = ProductSerializer(data=request.data)
         if serializer.is_valid():
             serializer.validated_data['author'] = request.user
@@ -95,6 +184,14 @@ class DetailProduct(APIView):
         product.save()
         return Response(serializer.data)
 
+
+class EditProduct(APIView):
+    def get_object(self, pk):
+        try:
+            return Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
+            raise Http404
+
     @swagger_auto_schema(request_body=ProductSerializer)
     def put(self, request, pk, format=None):
         permission_classes = [IsAdminUser]
@@ -105,6 +202,14 @@ class DetailProduct(APIView):
             return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+class DeleteProduct(APIView):
+    def get_object(self, pk):
+        try:
+            return Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
+            raise Http404
+            
     def delete(self, request, pk, format=None):
         permission_classes = [IsAdminUser]
         product = self.get_object(pk)
@@ -284,89 +389,3 @@ class AddReview(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# User Auth
-
-class ListUsers(APIView):
-    def get(self, request):
-        permission_classes = [IsAdminUser]
-        users = UserProfile.objects.all()
-        serializer = UserSerializer(users, many=True)
-        return Response(serializer.data)
-
-
-
-class UserAuth(APIView):
-    @swagger_auto_schema(request_body=UserSerializer)
-    def post(self, request, format=None):
-        serializer = UserSerializer(data=request.data)
-        account_id = os.getenv('account')
-        auth_token = os.getenv('token')
-        phone = request.data['phone_number']
-        otp = random.randrange(100000, 999999)
-        body = "Your OTP is " + str(otp)
-        message = client.messages.create(to=phone, from_="+17573780739",
-                                         body=body)
-        if serializer.is_valid():
-            serializer.validated_data['code'] = str(otp)
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-
-class Validate(APIView):
-    @swagger_auto_schema(request_body=ValidationSerializer)
-    def put(self, request, pk, format=None):
-        permission_classes = [IsAuthenticated]
-        user = UserProfile.objects.get(pk=pk)
-        serializer = ValidationSerializer(user, data=request.data)
-        
-        if serializer.is_valid():
-            code = serializer.validated_data['code']
-            if code == user.code:
-                user.is_active=True
-                user.code="null"
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-
-
-class MyProfile(APIView):
-    def get_object(self, request):
-        try:
-            return UserProfile.objects.get(pk=request.user.pk)
-        except UserProfile.DoesNotExist:
-            raise Http404
-
-    def get(self, request, pk):
-        user = UserProfile.objects.get(pk=request.user.pk)
-        serializer = UserSerializer(user)
-        return Response(serializer.data)
-
-    @swagger_auto_schema(request_body=UserSerializer)
-    def put(self, request, pk, format=None):
-        user = UserProfile.objects.get(pk=request.user.pk)
-        serializer = UserSerializer(user, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, pk, format=None):
-        user = UserProfile.objects.get(pk=request.user.pk)
-        user.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    @swagger_auto_schema(request_body=ValidationSerializer)
-    def put(self, request, format=None):
-        permission_classes = [IsAuthenticated]
-        user = request.user
-        serializer = ValidationSerializer(user, data=request.data)
-        if serializer.is_valid():
-            code = request.data['code']
-            if code == self.post.otp:
-                is_active = serializer.validated_data['is_active']
-                is_active=True
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
