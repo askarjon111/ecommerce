@@ -26,7 +26,7 @@ def register_social_user(provider, user_id, email, name):
                 email=email, password=os.getenv('SOCIAL_SECRET'))
 
             return {
-                'username': registered_user.username,
+                # 'username': registered_user.username,
                 'email': registered_user.email,
                 'tokens': registered_user.tokens()}
 
@@ -49,6 +49,5 @@ def register_social_user(provider, user_id, email, name):
         print(new_user)
         return {
             'email': new_user.email,
-            'username': new_user.username,
             'tokens': new_user.tokens()
         }

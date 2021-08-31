@@ -1,5 +1,4 @@
 from django.db import models
-# from django.contrib.auth.models import User
 from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils.translation import gettext_lazy as _
@@ -36,6 +35,7 @@ class CustomAccountManager(BaseUserManager):
             password=password,
         )
         user.is_admin = True
+        user.is_active = True
         user.save(using=self._db)
         return user
 
@@ -45,7 +45,8 @@ AUTH_PROVIDERS = {'facebook': 'facebook',
 
 class UserProfile(AbstractBaseUser):
     email = models.EmailField(unique=True)
-    username = models.CharField(max_length=255)
+    username=None
+    # username = models.CharField(max_length=255)
     first_name = models.CharField(max_length=255, blank=True, null=True)
     last_name = models.CharField(max_length=255, blank=True, null=True)
     code = models.CharField(max_length=255, blank=True, null=True)
@@ -54,7 +55,8 @@ class UserProfile(AbstractBaseUser):
         max_length=255, blank=False,
         null=False, default=AUTH_PROVIDERS.get('email'))
 
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    is_verified = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)
 
     objects = CustomAccountManager()
@@ -90,7 +92,6 @@ class UserProfile(AbstractBaseUser):
             'refresh': str(refresh),
             'access': str(refresh.access_token)
         }
-    
 
 
 class Category(models.Model):
@@ -115,7 +116,7 @@ class Product(models.Model):
     price = models.DecimalField(
         max_digits=10, decimal_places=2)
     stock = models.IntegerField(null=True, blank=True, default=0)
-    category = models.ManyToManyField(Category)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
     description = models.TextField(blank=True, null=True)
     author = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now=True)

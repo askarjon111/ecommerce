@@ -53,7 +53,6 @@ class UserAuth(APIView):
         if serializer.is_valid():
             serializer.validated_data['code'] = str(otp)
             user = UserProfile.objects.create_user(email=serializer.validated_data['email'])
-            user.set_password(serializer.validated_data['password'])
             user.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -69,7 +68,7 @@ class Validate(APIView):
         if serializer.is_valid():
             code = serializer.validated_data['code']
             if code == user.code:
-                user.is_active = True
+                user.is_verified = True
                 user.code = "null"
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -119,7 +118,6 @@ class MyProfile(APIView):
 
 class GoogleSocialAuthView(GenericAPIView):
     permission_classes = [AllowAny]
-
     serializer_class = GoogleSocialAuthSerializer
 
     def post(self, request):
