@@ -10,10 +10,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 class CustomAccountManager(BaseUserManager):
 
     def create_user(self, email, password=None):
-        """
-        Creates and saves a User with the given email, date of
-        birth and password.
-        """
         if not email:
             raise ValueError('Users must have an email')
 
@@ -26,16 +22,16 @@ class CustomAccountManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, password=None):
-        """
-        Creates and saves a superuser with the given email, date of
-        birth and password.
-        """
-        user = self.create_user(
+        if not email:
+            raise ValueError('Users must have an email')
+        user = self.model(
             email=email,
-            password=password,
         )
+
+        user.set_password(password)
         user.is_admin = True
-        user.is_active = True
+        user.is_staff = True
+        user.is_superuser=True
         user.save(using=self._db)
         return user
 
@@ -46,7 +42,6 @@ AUTH_PROVIDERS = {'facebook': 'facebook',
 class UserProfile(AbstractBaseUser):
     email = models.EmailField(unique=True)
     username=None
-    # username = models.CharField(max_length=255)
     first_name = models.CharField(max_length=255, blank=True, null=True)
     last_name = models.CharField(max_length=255, blank=True, null=True)
     code = models.CharField(max_length=255, blank=True, null=True)
@@ -58,6 +53,7 @@ class UserProfile(AbstractBaseUser):
     is_active = models.BooleanField(default=True)
     is_verified = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)
 
     objects = CustomAccountManager()
 
@@ -77,11 +73,11 @@ class UserProfile(AbstractBaseUser):
         # Simplest possible answer: Yes, always
         return True
 
-    @property
-    def is_staff(self):
-        """Is the user a member of staff?"""
-        # Simplest possible answer: All admins are staff
-        return self.is_admin
+    # @property
+    # def is_staff(self):
+    #     """Is the user a member of staff?"""
+    #     # Simplest possible answer: All admins are staff
+    #     return self.is_admin
     
     def __str__(self):
         return self.email

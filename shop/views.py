@@ -157,7 +157,7 @@ class ListProducts(APIView):
 
 
 class AddProduct(APIView):
-    authentication_classes = [authentication.BasicAuthentication]
+    # authentication_classes = [authentication.BasicAuthentication]
     permission_classes = [IsAdminUser]
     @swagger_auto_schema(request_body=ProductSerializer)
     def post(self, request, format=None):

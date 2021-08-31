@@ -1,9 +1,11 @@
 import json
+from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 from django.test import TestCase
 from django import test
 from django.utils import timezone
 from django.urls import reverse
 from .views import *
+from django.contrib.auth import get_user_model
 
 client = test.Client()
 
@@ -47,24 +49,27 @@ class GetAllProductsTest(TestCase):
 
 class AddProductTest(TestCase):
     def setUp(self):
-        user = UserProfile.objects.create_superuser(email="test@user.com")
         category = Category.objects.create(
             title="test category", slug="testcategory")
             
         self.valid_product = {
             'title': 'Product1',
             'price': 500,
-            'category': 1,
-            'author': 1,
+            'category': 1
         }
         self.invalid_product = {
             'title': '',
             'price': 500,
-            'category': 1,
-            'author': 1,
+            'category': 1
         }
 
     def test_create_valid_product(self):
+        client = APIClient()
+        user = UserProfile.objects.create_superuser(
+            email="testuser@gmail.com",
+            password="testpass"
+        )
+        client.force_authenticate(user=user)
         response = client.post(
             reverse('addproduct'),
             data=json.dumps(self.valid_product),
@@ -73,6 +78,12 @@ class AddProductTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_create_invalid_product(self):
+        client = APIClient()
+        user = UserProfile.objects.create_superuser(
+            email="testuser1@gmail.com",
+            password="testpass"
+        )
+        client.force_authenticate(user=user)
         response = client.post(
             reverse('addproduct'),
             data=json.dumps(self.invalid_product),
