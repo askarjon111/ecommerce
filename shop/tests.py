@@ -1,5 +1,5 @@
 import json
-from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
+from rest_framework.test import APIClient, force_authenticate
 from django.test import TestCase
 from django import test
 from django.utils import timezone
@@ -47,18 +47,13 @@ class GetAllProductsTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
-class AddProductTest(TestCase):
+class AddValidProductTest(TestCase):
     def setUp(self):
         category = Category.objects.create(
             title="test category", slug="testcategory")
-            
+
         self.valid_product = {
-            'title': 'Product1',
-            'price': 500,
-            'category': 1
-        }
-        self.invalid_product = {
-            'title': '',
+            'title': 'Product 1',
             'price': 500,
             'category': 1
         }
@@ -66,7 +61,7 @@ class AddProductTest(TestCase):
     def test_create_valid_product(self):
         client = APIClient()
         user = UserProfile.objects.create_superuser(
-            email="testuser@gmail.com",
+            email="testuser2@gmail.com",
             password="testpass"
         )
         client.force_authenticate(user=user)
@@ -75,12 +70,24 @@ class AddProductTest(TestCase):
             data=json.dumps(self.valid_product),
             content_type='application/json'
         )
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class AddInvalidProductTest(TestCase):
+    def setUp(self):
+        category = Category.objects.create(
+            title="test category", slug="testcategory")
+
+        self.invalid_product = {
+            'title': '',
+            'price': 500,
+            'category': 1
+        }
 
     def test_create_invalid_product(self):
         client = APIClient()
         user = UserProfile.objects.create_superuser(
-            email="testuser1@gmail.com",
+            email="testuser3@gmail.com",
             password="testpass"
         )
         client.force_authenticate(user=user)
