@@ -179,12 +179,11 @@ class DetailProduct(APIView):
     def get(self, request, pk, format=None):
         product = self.get_object(pk)
         serializer = ProductSerializer(product)
-        product.save()
         return Response(serializer.data)
 
 
 class EditProduct(APIView):
-    authentication_classes = [authentication.BasicAuthentication]
+    # authentication_classes = [authentication.BasicAuthentication]
     permission_classes = [IsAdminUser]
     def get_object(self, pk):
         try:
@@ -246,8 +245,8 @@ class DetailCategory(APIView):
             raise Http404
 
     def get(self, request, pk):
-        posts = Product.objects.filter(category=pk).order_by('-id')
-        serializer = ProductSerializer(posts, many=True)
+        products = Product.objects.filter(category=pk).order_by('-id')
+        serializer = ProductSerializer(products, many=True)
         return Response(serializer.data)
 
     @swagger_auto_schema(request_body=CategorySerializer)

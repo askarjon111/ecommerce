@@ -7,9 +7,11 @@ from django.urls import reverse
 from .views import *
 from django.contrib.auth import get_user_model
 
+
 client = test.Client()
 
-class GetAllProductsTest(TestCase):
+# Product Tests
+class GetProductsTest(TestCase):
     """ Test module for GET all products API """
     
     def setUp(self):
@@ -97,3 +99,92 @@ class AddInvalidProductTest(TestCase):
             content_type='application/json'
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+# class EditProductTest(TestCase):
+#     def setUp(self):
+#         user = UserProfile.objects.create_superuser(email="test@user.com")
+#         category = Category.objects.create(title="test category", slug="testcategory")
+
+#         self.product1 = Product.objects.create(
+#             title='Product 1', price=3, category=category, author=user)
+
+#         self.valid_product = {
+#             'title': 'Product 1',
+#             'price': 500,
+#             'category': 1
+#         }
+
+#     def test_valid_edit_product(self):
+#         client = APIClient()
+#         user = UserProfile.objects.create_superuser(
+#             email="testuser2@gmail.com",
+#             password="testpass"
+#         )
+#         client.force_authenticate(user=user)
+
+#         response = client.put(
+#             reverse('editproduct', kwargs={'pk': self.product1.pk}),
+#             data=json.dumps(self.valid_product),
+#             content_type='application/json'
+#         )
+#         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+    
+
+# class TestEditInvalidProduct(TestCase):
+#     def setUp(self):
+#         user = UserProfile.objects.create_superuser(email="test@user.com")
+#         category = Category.objects.create(
+#             title="test category", slug="testcategory")
+
+#         self.invalid_product = {
+#             'title': '',
+#             'price': 500,
+#             'category': 1
+#         }
+
+#         self.product1 = Product.objects.create(
+#             title='Product 1', price=3, category=category, author=user)
+
+#     def test_invalid_edit_product(self):
+#         client = APIClient()
+#         user = UserProfile.objects.create_superuser(
+#             email="testuser3@gmail.com",
+#             password="testpass"
+#         )
+#         client.force_authenticate(user=user)
+
+#         response = client.put(
+#             reverse('editproduct', kwargs={'pk': self.product1.pk}),
+#             data=json.dumps(self.invalid_product),
+#             content_type='application/json')
+#         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class GetCategoriesTest(TestCase):
+
+    def setUp(self):
+        self.category1 = Category.objects.create(
+            title='Category 1', slug="category1")
+        self.category2 = Category.objects.create(
+            title='Category 2', slug="category2")
+        self.category3 = Category.objects.create(
+            title='Category 3', slug="category3")
+        self.category4 = Category.objects.create(
+            title='Category 4', slug="category4")
+
+    def test_get_all_categories(self):
+        # get API response
+        response = client.get(reverse('category'))
+        # get data from db
+        categories = Category.objects.all()
+        serializer = CategorySerializer(categories, many=True)
+        self.assertEqual(response.data, serializer.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_valid_single_category(self):
+        response = client.get(
+            reverse('detailcategory', kwargs={'pk': self.category1.pk}))
+        category = Category.objects.get(pk=self.category1.pk)
+        serializer = CategorySerializer(category)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
