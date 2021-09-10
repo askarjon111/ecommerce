@@ -1,18 +1,11 @@
 import os
 import random
-from datetime import datetime
 
-from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.http import Http404, JsonResponse
-from django.shortcuts import get_object_or_404
 from dotenv import load_dotenv
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status, authentication
-from rest_framework.authtoken.models import Token
-from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.exceptions import AuthenticationFailed
+from rest_framework import authentication, status
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import *
 from rest_framework.response import Response
@@ -22,7 +15,6 @@ from twilio.rest import Client
 from .models import *
 from .serializers import *
 from .serializers import GoogleSocialAuthSerializer
-import jwt
 
 load_dotenv()
 
@@ -276,7 +268,6 @@ class MyCart(APIView):
         serializer = OrderItemSerializer(orderitems, many=True)
         return Response(serializer.data)
 
-
 class AddToCart(APIView):
     authentication_classes = [authentication.BasicAuthentication]
     permission_classes = [IsAuthenticated]
@@ -289,7 +280,6 @@ class AddToCart(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class CartItem(APIView):
     authentication_classes = [authentication.BasicAuthentication]
@@ -325,7 +315,6 @@ class EditCartItem(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class DeleteCartItem(APIView):
     authentication_classes = [authentication.BasicAuthentication]

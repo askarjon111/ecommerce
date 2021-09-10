@@ -1,11 +1,10 @@
 import json
-from rest_framework.test import APIClient
-from django.test import TestCase
-from django import test
-from django.utils import timezone
-from django.urls import reverse
-from .views import *
 
+from django import test
+from django.test import TestCase
+from django.urls import reverse
+from rest_framework.test import APIClient
+from shop.views import *
 
 client = test.Client()
 
@@ -13,10 +12,11 @@ client = test.Client()
 # Product Tests
 class GetProductsTest(TestCase):
     """ Test module for GET all products API """
-    
+
     def setUp(self):
         user = UserProfile.objects.create_superuser(email="test@user.com")
-        category = Category.objects.create(title="test category", slug="testcategory")
+        category = Category.objects.create(
+            title="test category", slug="testcategory")
         self.product1 = Product.objects.create(
             title='Product 1', price=3, category=category, author=user)
         self.product2 = Product.objects.create(
@@ -100,6 +100,7 @@ class AddInvalidProductTest(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+
 class GetCategoriesTest(TestCase):
 
     def setUp(self):
@@ -126,94 +127,3 @@ class GetCategoriesTest(TestCase):
             reverse('detailcategory', kwargs={'pk': self.category1.pk}))
         category = Category.objects.get(pk=self.category1.pk)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-
-# Cart Tests
-
-class OrderItemSetup(TestCase):
-    def setUp(self):
-        self.author = UserProfile.objects.create_superuser(email="testsuper@user.com")
-        self.user = UserProfile.objects.create_user(email="test@user.com")
-        self.category = Category.objects.create(
-            title="test category", slug="testcategory")
-        self.product = Product.objects.create(
-            title='Product 1', price=3, category=self.category, author=self.author)
-        self.orderitem = OrderItem.objects.create(
-            product=self.product, qty=1, user=self.user)
-        
-        self.order = Order.objects.create(
-            orderItem=self.orderitem,
-            user=self.user
-        )
-
-        self.valid_data = {
-            'product': self.product,
-            'qty': 5,
-            'user': self.user
-        }
-
-
-class AddToCartTest(OrderItemSetup):
-    def test_add_to_cart(self):
-        client = APIClient()
-        client.force_authenticate(user=self.user)
-        serializer = OrderItemSerializer(self.orderitem)
-        response = client.post(
-            reverse('addtocart'),
-            data=json.dumps(serializer.data),
-            content_type='application/json'
-        )
-        
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-class MyCartTest(OrderItemSetup):
-    def test_my_cart(self):
-        client = APIClient()
-        client.force_authenticate(user=self.user)
-        response = client.get(reverse('mycart'))
-        mycart = OrderItem.objects.filter(user=self.user)
-        serializer = OrderItemSerializer(self.orderitem)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_cart_item(self):
-        client = APIClient()
-        client.force_authenticate(user=self.user)
-        response = client.get(
-            reverse('cartitemdetail', kwargs={'pk': self.orderitem.pk}))
-        orderitem = OrderItem.objects.get(pk=self.orderitem.pk)
-        serializer = OrderItemSerializer(orderitem)
-        self.assertEqual(response.data, serializer.data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_update_cartitem(self):
-        client = APIClient()
-        client.force_authenticate(user=self.user)
-        serializer = OrderItemSerializer(self.orderitem)
-        response = client.put(
-            reverse('editcartitem', 
-            kwargs={'pk': self.orderitem.pk}),
-            data=json.dumps(serializer.data),
-            content_type='application/json'
-        )
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-    
-    def test_delete_cartitem(self):
-        client = APIClient()
-        client.force_authenticate(user=self.user)
-        response = client.delete(
-            reverse('deletecartitem', kwargs={'pk': self.orderitem.pk}))
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-
-
-class AddOrderTest(OrderItemSetup):
-    def test_add_order(self):
-        client = APIClient()
-        client.force_authenticate(user=self.user)
-        serializer = OrderSerializer(self.order)
-        response = client.post(
-            reverse('checkout'),
-            data=json.dumps(serializer.data),
-            content_type='application/json'
-        )
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)

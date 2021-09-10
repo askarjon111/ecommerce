@@ -1,9 +1,6 @@
 from django.db import models
-from django.utils import timezone
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.utils.translation import gettext_lazy as _
-from django.conf import settings
-import random
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
@@ -145,7 +142,8 @@ class OrderItem(models.Model):
 
 
 class Order(models.Model):
-    orderItem = models.ManyToManyField(OrderItem)
+    orderItem = models.ForeignKey(
+        OrderItem, on_delete=models.DO_NOTHING, blank=True, null=True)
     address = models.CharField(max_length=500, blank=True, null=True)
     paymentMethod = models.CharField(max_length=200, null=True, blank=True)
     isPaid = models.BooleanField(default=False)
