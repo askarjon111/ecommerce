@@ -142,8 +142,7 @@ class OrderItem(models.Model):
 
 
 class Order(models.Model):
-    orderItem = models.ForeignKey(
-        OrderItem, on_delete=models.DO_NOTHING, blank=True, null=True)
+    orderItem = models.ManyToManyField(OrderItem)
     address = models.CharField(max_length=500, blank=True, null=True)
     paymentMethod = models.CharField(max_length=200, null=True, blank=True)
     isPaid = models.BooleanField(default=False)
